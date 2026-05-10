@@ -1,7 +1,6 @@
 # 🚀 GPU Stress Test - Raymarching Engine
 **Developed by Enric-Xx & CoreDev-HUB**
 
-![License](https://img.shields.io/badge/License-MIT-red.svg)
 ![WebGL](https://img.shields.io/badge/Engine-WebGL_1.0-orange.svg)
 ![Status](https://img.shields.io/badge/Status-Extreme_Stress-brightgreen.svg)
 
