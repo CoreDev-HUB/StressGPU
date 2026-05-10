@@ -14,11 +14,6 @@
 * **Live Kernel Injection:** Modify the GPU math on-the-fly via the "Kernel Tweak" console.
 * **Zero Installation:** Runs directly in the browser using raw WebGL.
 
-## 🚀 Quick Start
-1. Clone the repo: `git clone https://github.com/CoreDev-HUB/StressGPU.git`
-2. Open `index.html` in any modern browser.
-3. Watch your GPU clock speeds rise.
-
 ## ⚠️ Disclaimer
 This tool is designed to generate significant heat. Use at your own risk. Ensure your cooling system (especially on laptops) is working correctly before running extreme kernels.
 
