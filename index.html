@@ -5,114 +5,131 @@
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
     <title>GPU Stress Test | Enric-Xx & CoreDev-HUB</title>
     <style>
-        /* CSS3: Aquí definimos el estilo visual de la interfaz */
-        body {
-            background: #0a0a0c; /* Fondo ultra oscuro */
-            color: #ff4747;
-            font-family: 'Segoe UI', sans-serif;
+        /* =========================================
+           CSS: Clonando la interfaz de la captura
+           ========================================= */
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
+            background-color: #000; /* Fondo negro absoluto */
+            font-family: 'Consolas', 'Courier New', monospace; /* Fuente de código */
         }
 
+        /* El lienzo del fractal ocupa toda la pantalla */
         #c1 {
             position: fixed;
-            left: 0;
             top: 0;
+            left: 0;
             width: 100vw;
             height: 100vh;
             z-index: 1;
         }
 
-        #ui-container {
+        /* Contenedor principal de la UI (abajo) */
+        #ui-main-container {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 10; /* Por encima del canvas */
-            background: rgba(15, 15, 20, 0.9);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #ff4747; /* Borde rojo neón */
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 20px rgba(255, 71, 71, 0.2);
-        }
-
-        h1 {
-            font-size: 20px;
-            margin: 0;
-            color: #fff;
-            text-shadow: 0 0 10px rgba(255, 71, 71, 0.5);
-        }
-
-        .brand {
-            font-size: 11px;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            opacity: 0.8;
-        }
-
-        button {
-            background: #ff4747;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
-        }
-
-        button:hover {
-            background: #fff;
-            color: #ff4747;
-            box-shadow: 0 0 15px #ff4747;
-        }
-
-        #config {
-            margin-top: 15px;
-            display: none; /* Se muestra al dar a CONFIG */
-        }
-
-        textarea {
-            background: #000;
-            color: #00ff00; /* Texto tipo Matrix */
-            border: 1px solid #444;
-            font-family: 'Consolas', monospace;
-            width: 300px;
-            height: 150px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            padding: 5px;
-        }
-
-        .status-box {
-            margin-top: 15px;
-            font-size: 12px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 150px; /* Altura de la consola */
+            z-index: 10;
+            background: rgba(10, 10, 12, 0.95); /* Fondo oscuro semitransparente */
             border-top: 1px solid #333;
-            padding-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto; /* Texto a la izquierda, botón a la derecha */
+            gap: 20px;
+            padding: 15px 30px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px); /* Efecto cristal esmerilado */
         }
+
+        /* Sección de la consola de texto */
+        #console-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* El título de la consola */
+        #console-label {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        /* El área de texto (El Kernel) */
+        textarea {
+            background: transparent;
+            border: none;
+            color: #0f0; /* Color Matrix */
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            width: 100%;
+            height: 80px;
+            resize: none;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Sección del botón */
+        #button-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-right: 20px;
+        }
+
+        /* Botón APPLY (estilo neón rojo) */
+        #apply {
+            background: transparent;
+            border: 2px solid #ff4747;
+            color: #ff4747;
+            padding: 15px 40px;
+            border-radius: 4px;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 71, 71, 0.3);
+        }
+
+        #apply:hover {
+            background: #ff4747;
+            color: #fff;
+            box-shadow: 0 0 25px rgba(255, 71, 71, 0.8);
+            transform: scale(1.05);
+        }
+
+        /* Ocultamos el botón CONFIG viejo, ya no hace falta */
+        #btn { display: none; }
+        #config { display: block !important; }
+
     </style>
 </head>
 <body>
 
     <canvas id="c1"></canvas>
 
-    <div id="ui-container">
-        <h1>GPU STRESS TEST</h1>
-        <div class="brand">COREDEV-HUB // ENRIC-XX</div>
+    <div id="ui-main-container">
         
-        <button id="btn">Config Kernel</button>
-        
-        <div id="config">
-            <textarea id="kernel"></textarea>
-            <br>
-            <button id="apply">Apply Tweak</button>
+        <div id="console-section">
+            <div id="console-label">CoreDev-HUB // Kernel Console</div>
+            <textarea id="kernel" spellcheck="false"></textarea>
         </div>
 
-        <div class="status-box">
-            <span style="color: #888;">ENGINE:</span> WebGL Raymarching<br>
-            <span style="color: #888;">TARGET:</span> RTX 4060 / i5-12400F
+        <div id="button-section">
+            <button id="apply">Apply</button>
         </div>
+
     </div>
 
     <script src="script.js"></script>
