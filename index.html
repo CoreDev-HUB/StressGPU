@@ -3,77 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stress GPU | Enric-Xx & CodeDev.Hub</title>
+    <title>Stress GPU | CoreDev.Hub // Enric-Xx</title>
     <style>
+        /* =========================================
+           CSS3: Estilo Visual y Corrección de Ratio
+           ========================================= */
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background: #000; overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        #main {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
+            background: #010102; /* Fondo casi negro */
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             display: flex; justify-content: center; align-items: center;
         }
 
-        #c1 {
-            /* El motor usa un sistema de escalado interno */
-            transform-origin: center;
+        /* Contenedor principal del canvas para forzar cuadrado */
+        #canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding-bottom: 130px; /* Espacio para la barra inferior */
+            box-sizing: border-box;
         }
 
-        /* Barra inferior estilo la captura */
+        /* El canvas: Forzamos que sea cuadrado y no se estire */
+        #c1 {
+            background: #000;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            /* Estas propiedades aseguran la proporción 1:1 */
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 1 / 1; 
+            object-fit: contain;
+        }
+
+        /* =========================================
+           PANEL INFERIOR: Consola a la Izquierda
+           ========================================= */
         #ui-panel {
             position: fixed; bottom: 0; left: 0;
             width: 100%; height: 130px;
             background: rgba(10, 10, 12, 0.95);
-            border-top: 1px solid #333;
+            border-top: 1px solid #2a2a2a;
             z-index: 10;
-            display: flex; align-items: center;
-            padding: 0 30px; box-sizing: border-box;
-            backdrop-filter: blur(10px);
+            display: grid;
+            /* Definimos 3 columnas: Consola (flexible), Botón (fijo), Info (fijo) */
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            padding: 0 40px; box-sizing: border-box;
+            backdrop-filter: blur(15px); /* Efecto esmerilado pro */
         }
 
+        /* COLUMNA 1: Consola del Kernel (Izquierda) */
         .console-container {
-            flex-grow: 1;
             display: flex; flex-direction: column;
+            padding-right: 20px;
         }
 
         .label {
-            color: #666; font-size: 10px;
+            color: #555; font-size: 10px;
             text-transform: uppercase; letter-spacing: 2px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         textarea {
-            background: transparent; border: none;
-            color: #00ff41; font-family: 'Consolas', monospace;
-            font-size: 13px; width: 100%; height: 70px;
-            outline: none; resize: none;
+            background: rgba(0, 0, 0, 0.3); border: 1px solid #222;
+            color: #00ff41; font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px; width: 100%; height: 75px;
+            outline: none; resize: none; padding: 10px; box-sizing: border-box;
+            border-radius: 4px;
         }
 
+        /* COLUMNA 2: Botón APPLY */
         #apply {
             margin: 0 30px;
             background: transparent; border: 2px solid #ff4747;
-            color: #ff4747; padding: 15px 40px;
+            color: #ff4747; padding: 16px 45px;
             font-weight: bold; cursor: pointer;
-            border-radius: 4px; transition: 0.3s;
+            border-radius: 4px; transition: all 0.3s ease;
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
         #apply:hover {
             background: #ff4747; color: #fff;
-            box-shadow: 0 0 20px rgba(255, 71, 71, 0.6);
+            box-shadow: 0 0 30px rgba(255, 71, 71, 0.7);
+            transform: translateY(-2px);
         }
 
+        /* COLUMNA 3: Texto Info (Derecha) */
         .info {
-            color: #555; font-size: 11px; min-width: 250px;
+            color: #444; font-size: 11px; min-width: 230px;
+            text-align: right; border-left: 1px solid #222; padding-left: 30px;
         }
     </style>
 </head>
 <body>
 
-    <div id="main">
+    <div id="canvas-wrapper">
         <canvas id="c1" width="1024" height="1024"></canvas>
     </div>
 
@@ -83,26 +111,26 @@
             <textarea id="kernel" spellcheck="false"></textarea>
         </div>
 
-        <button id="apply">APPLY TWEAK</button>
+        <button id="apply">Apply Tweak</button>
 
         <div class="info">
             ENGINE: WebGL Raymarching Solver<br>
-            PLATFORM: CodeDev.Hub Ecosystem<br>
-            STATUS: <span style="color:#00ff41">OPTIMIZED RENDER</span>
+            STATUS: <span style="color:#00ff41">OPTIMIZED RENDER (1:1)</span><br>
+            TARGET: High-Performance GPU
         </div>
     </div>
 
     <script>
-    var cx, cy, glposition, glright, glforward, glup, glorigin, glx, gly, gllen, canvas, gl;
+    var cx, cy, glposition, glright, glforward, glup, glorigin, glx, gly, gllen, canvas, gl, shaderProgram;
     var len = 1.6, ang1 = 2.8, ang2 = 0.4, cenx = 0.0, ceny = 0.0, cenz = 0.0;
-    var ml = 0, mr = 0, mm = 0, mx = 0, my = 0;
+    var ml = 0, mx = 0, my = 0;
 
-    // EL KERNEL QUE SOLICITASTE
+    // EL KERNEL DE 8 ITERACIONES (RESTAURADO)
     var KERNEL = "float kernal(vec3 ver){\n" +
             "   vec3 a;\n" +
             "   float b,c,d,e;\n" +
             "   a=ver;\n" +
-            "   for(int i=0;i<8;i++){\n" + // Subido a 8 para más estrés
+            "   for(int i=0;i<8;i++){\n" +
             "       b=length(a);\n" +
             "       c=atan(a.y,a.x)*8.0;\n" +
             "       e=1.0/b;\n" +
@@ -118,12 +146,10 @@
 
     var VSHADER_SOURCE = "#version 100 \n precision highp float; attribute vec4 position; varying vec3 dir, localdir; uniform vec3 right, forward, up, origin; uniform float x,y; void main() { gl_Position = position; dir = forward + right * position.x*x + up * position.y*y; localdir.x = position.x*x; localdir.y = position.y*y; localdir.z = -1.0; }";
     
+    // FSHADER: Mantenemos la lógica de color y reflejos avanzada
     var FSHADER_SOURCE = "#version 100 \n #define PI 3.14159265358979324\n #define M_L 0.3819660113\n #define M_R 0.6180339887\n #define MAXR 8\n #define SOLVER 8\n precision highp float; float kernal(vec3 ver); uniform vec3 right, forward, up, origin; varying vec3 dir, localdir; uniform float len; void main() { vec3 color = vec3(0.0); int sign=0; float v, v1, v2; float r1, r2, r3, r4, m1, m2, m3, m4; vec3 n, reflect; const float step = 0.002; v1 = kernal(origin + dir * (step*len)); v2 = kernal(origin); for (int k = 2; k < 1002; k++) { vec3 ver = origin + dir * (step*len*float(k)); v = kernal(ver); if (v > 0.0 && v1 < 0.0) { r1 = step * len*float(k - 1); r2 = step * len*float(k); m1 = kernal(origin + dir * r1); m2 = kernal(origin + dir * r2); for (int l = 0; l < SOLVER; l++) { r3 = r1 * 0.5 + r2 * 0.5; m3 = kernal(origin + dir * r3); if (m3 > 0.0) { r2 = r3; m2 = m3; } else { r1 = r3; m1 = m3; } } if (r3 < 2.0 * len) { sign=1; break; } } v2 = v1; v1 = v; } if (sign==1) { vec3 targetVer = origin + dir*r3; float rDist = targetVer.x*targetVer.x+targetVer.y*targetVer.y+targetVer.z*targetVer.z; n.x = kernal(targetVer - right * (r3*0.00025)) - kernal(targetVer + right * (r3*0.00025)); n.y = kernal(targetVer - up * (r3*0.00025)) - kernal(targetVer + up * (r3*0.00025)); n.z = kernal(targetVer + forward * (r3*0.00025)) - kernal(targetVer - forward * (r3*0.00025)); n = normalize(n); vec3 viewDir = normalize(localdir); reflect = n * (-2.0*dot(viewDir, n)) + viewDir; r3 = max(0.0, reflect.x*0.276+reflect.y*0.920+reflect.z*0.276); r3 = pow(r3, 4.0) * 0.45 + (n.x*0.276+n.y*0.920+n.z*0.276) * 0.25 + 0.3; vec3 baseCol; baseCol.x = sin(rDist*10.0)*0.5+0.5; baseCol.y = sin(rDist*10.0+2.05)*0.5+0.5; baseCol.z = sin(rDist*10.0-2.05)*0.5+0.5; color = baseCol * r3; } gl_FragColor = vec4(color, 1.0); }";
 
-    window.onload = function () {
-        canvas = document.getElementById('c1');
-        gl = canvas.getContext('webgl');
-        
+    function updateShaders() {
         var vertshader = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vertshader, VSHADER_SOURCE);
         gl.compileShader(vertshader);
@@ -132,12 +158,19 @@
         gl.shaderSource(fragshader, FSHADER_SOURCE + KERNEL);
         gl.compileShader(fragshader);
 
-        shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertshader);
-        gl.attachShader(shaderProgram, fragshader);
-        gl.linkProgram(shaderProgram);
+        var newProgram = gl.createProgram();
+        gl.attachShader(newProgram, vertshader);
+        gl.attachShader(newProgram, fragshader);
+        gl.linkProgram(newProgram);
+
+        if (!gl.getProgramParameter(newProgram, gl.LINK_STATUS)) {
+            console.error("Shader Error:", gl.getProgramInfoLog(newProgram));
+            return;
+        }
+        shaderProgram = newProgram;
         gl.useProgram(shaderProgram);
 
+        // Re-vinculamos locaciones
         glposition = gl.getAttribLocation(shaderProgram, 'position');
         glorigin = gl.getUniformLocation(shaderProgram, 'origin');
         glright = gl.getUniformLocation(shaderProgram, 'right');
@@ -147,24 +180,27 @@
         gly = gl.getUniformLocation(shaderProgram, 'y');
         gllen = gl.getUniformLocation(shaderProgram, 'len');
 
+        // Re-vinculamos buffer
         var buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,0, 1,-1,0, 1,1,0, -1,-1,0, 1,1,0, -1,1,0]), gl.STATIC_DRAW);
         gl.vertexAttribPointer(glposition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(glposition);
+    }
 
+    window.onload = function () {
+        canvas = document.getElementById('c1');
+        gl = canvas.getContext('webgl');
+        
+        updateShaders();
         document.getElementById("kernel").value = KERNEL;
         resize();
         draw();
         window.requestAnimationFrame(ontimer);
 
-        // Control del botón APPLY
         document.getElementById("apply").onclick = function() {
             KERNEL = document.getElementById("kernel").value;
-            gl.shaderSource(fragshader, FSHADER_SOURCE + KERNEL);
-            gl.compileShader(fragshader);
-            gl.linkProgram(shaderProgram);
-            gl.useProgram(shaderProgram);
+            updateShaders();
         };
     }
 
@@ -175,8 +211,10 @@
     }
 
     function draw() {
-        gl.uniform1f(glx, cx * 2.0 / (cx + cy));
-        gl.uniform1f(gly, cy * 2.0 / (cx + cy));
+        if (!shaderProgram) return;
+        // CORRECCIÓN DE RATIO: Enviamos 1.0 a X e Y porque el canvas ya es cuadrado
+        gl.uniform1f(glx, 1.0);
+        gl.uniform1f(gly, 1.0);
         gl.uniform1f(gllen, len);
         gl.uniform3f(glorigin, len * Math.cos(ang1) * Math.cos(ang2) + cenx, len * Math.sin(ang2) + ceny, len * Math.sin(ang1) * Math.cos(ang2) + cenz);
         gl.uniform3f(glright, Math.sin(ang1), 0, -Math.cos(ang1));
@@ -186,17 +224,19 @@
     }
 
     function resize() {
-        cx = window.innerWidth; cy = window.innerHeight;
-        var size = Math.min(cx, cy);
-        canvas.style.width = size + "px";
-        canvas.style.height = size + "px";
+        // La corrección de ratio se hace vía CSS con aspect-ratio. 
+        // Aquí solo aseguramos que el viewport interno sea siempre 1024x1024
         gl.viewport(0, 0, 1024, 1024);
     }
 
     window.onresize = resize;
 
-    // Controles de ratón restaurados
-    document.addEventListener("mousedown", (e) => { if(e.button==0) ml=1; mx=e.clientX; my=e.clientY; });
+    // Controles de ratón
+    document.addEventListener("mousedown", (e) => { 
+        // Ignoramos si pulsamos en el panel de UI
+        if(e.clientY > window.innerHeight - 130) return;
+        if(e.button==0) ml=1; mx=e.clientX; my=e.clientY; 
+    });
     document.addEventListener("mouseup", () => { ml=0; });
     document.addEventListener("mousemove", (e) => {
         if(ml==1) {
