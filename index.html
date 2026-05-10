@@ -2,134 +2,117 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
-    <title>GPU Stress Test | Enric-Xx & CoreDev-HUB</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress GPU by Enric-Xx & CodeDev.Hub</title>
     <style>
-        /* =========================================
-           CSS: Clonando la interfaz de la captura
-           ========================================= */
+        /* CSS3 INTEGRADO: Controlamos la apariencia total */
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
+            background-color: #000;
             overflow: hidden;
-            background-color: #000; /* Fondo negro absoluto */
-            font-family: 'Consolas', 'Courier New', monospace; /* Fuente de código */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* El lienzo del fractal ocupa toda la pantalla */
+        /* El canvas donde se ve el fractal */
         #c1 {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             z-index: 1;
         }
 
-        /* Contenedor principal de la UI (abajo) */
-        #ui-main-container {
+        /* LA BARRA INFERIOR (Igual que tu captura) */
+        #ui-panel {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 150px; /* Altura de la consola */
+            height: 120px;
+            background: rgba(10, 10, 10, 0.9);
+            border-top: 2px solid #222;
             z-index: 10;
-            background: rgba(10, 10, 12, 0.95); /* Fondo oscuro semitransparente */
-            border-top: 1px solid #333;
-            display: grid;
-            grid-template-columns: 1fr auto; /* Texto a la izquierda, botón a la derecha */
-            gap: 20px;
-            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
             box-sizing: border-box;
-            backdrop-filter: blur(5px); /* Efecto cristal esmerilado */
+            backdrop-filter: blur(10px);
         }
 
-        /* Sección de la consola de texto */
-        #console-section {
+        /* Consola de texto estilo Matrix */
+        .console-box {
+            flex-grow: 1;
+            background: #050505;
+            border: 1px solid #333;
+            height: 80px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
         }
 
-        /* El título de la consola */
-        #console-label {
-            color: #888;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        /* El área de texto (El Kernel) */
-        textarea {
+        #kernel {
             background: transparent;
             border: none;
-            color: #0f0; /* Color Matrix */
+            color: #00ff41; /* Verde Matrix */
             font-family: 'Consolas', monospace;
             font-size: 13px;
             width: 100%;
-            height: 80px;
-            resize: none;
+            height: 100%;
             outline: none;
-            padding: 0;
-            margin: 0;
-            line-height: 1.4;
+            resize: none;
         }
 
-        /* Sección del botón */
-        #button-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding-right: 20px;
-        }
-
-        /* Botón APPLY (estilo neón rojo) */
+        /* Botón APPLY con brillo rojo */
         #apply {
+            margin-left: 30px;
             background: transparent;
             border: 2px solid #ff4747;
             color: #ff4747;
-            padding: 15px 40px;
-            border-radius: 4px;
-            font-family: 'Segoe UI', sans-serif;
+            padding: 15px 35px;
             font-weight: bold;
-            font-size: 14px;
             text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 10px rgba(255, 71, 71, 0.3);
+            border-radius: 4px;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(255, 71, 71, 0.2);
         }
 
         #apply:hover {
             background: #ff4747;
             color: #fff;
-            box-shadow: 0 0 25px rgba(255, 71, 71, 0.8);
-            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 71, 71, 0.6);
         }
 
-        /* Ocultamos el botón CONFIG viejo, ya no hace falta */
-        #btn { display: none; }
-        #config { display: block !important; }
-
+        /* Texto informativo a la derecha */
+        .info-text {
+            margin-left: 30px;
+            color: #666;
+            font-size: 11px;
+            line-height: 1.5;
+            min-width: 250px;
+        }
     </style>
 </head>
 <body>
 
     <canvas id="c1"></canvas>
 
-    <div id="ui-main-container">
-        
-        <div id="console-section">
-            <div id="console-label">CoreDev-HUB // Kernel Console</div>
+    <div id="ui-panel">
+        <div class="console-box">
             <textarea id="kernel" spellcheck="false"></textarea>
         </div>
 
-        <div id="button-section">
-            <button id="apply">Apply</button>
-        </div>
+        <button id="apply">APPLY</button>
 
+        <div class="info-text">
+            ENGINE: WebGL Raymarching<br>
+            PLATFORM: CoreDev-HUB // Enric-Xx<br>
+            STATUS: <span style="color: #ff4747;">STRESSING GPU...</span>
+        </div>
     </div>
 
     <script src="script.js"></script>
