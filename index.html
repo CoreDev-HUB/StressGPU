@@ -5,224 +5,117 @@
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
     <title>GPU Stress Test | Enric-Xx & CoreDev-HUB</title>
     <style>
+        /* CSS3: Aquí definimos el estilo visual de la interfaz */
         body {
-            background: #0a0a0c;
+            background: #0a0a0c; /* Fondo ultra oscuro */
             color: #ff4747;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             margin: 0;
             overflow: hidden;
         }
+
         #c1 {
             position: fixed;
             left: 0;
             top: 0;
             width: 100vw;
             height: 100vh;
-            filter: contrast(1.2) brightness(1.1);
+            z-index: 1;
         }
+
         #ui-container {
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 10;
-            background: rgba(13, 13, 15, 0.85);
+            z-index: 10; /* Por encima del canvas */
+            background: rgba(15, 15, 20, 0.9);
             padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #444;
+            border-radius: 12px;
+            border: 1px solid #ff4747; /* Borde rojo neón */
             backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(255, 71, 71, 0.2);
         }
+
         h1 {
-            font-size: 18px;
-            margin: 0 0 10px 0;
-            letter-spacing: 2px;
+            font-size: 20px;
+            margin: 0;
             color: #fff;
+            text-shadow: 0 0 10px rgba(255, 71, 71, 0.5);
         }
+
         .brand {
-            font-size: 12px;
-            color: #ff4747;
+            font-size: 11px;
+            letter-spacing: 1px;
             margin-bottom: 20px;
-            text-transform: uppercase;
+            opacity: 0.8;
         }
+
         button {
             background: #ff4747;
             border: none;
             color: white;
             padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
+            border-radius: 5px;
             font-weight: bold;
+            cursor: pointer;
             transition: 0.3s;
+            text-transform: uppercase;
         }
+
         button:hover {
-            background: #ff2222;
-            box-shadow: 0 0 15px rgba(255, 71, 71, 0.4);
+            background: #fff;
+            color: #ff4747;
+            box-shadow: 0 0 15px #ff4747;
         }
+
         #config {
             margin-top: 15px;
-            display: none;
+            display: none; /* Se muestra al dar a CONFIG */
         }
+
         textarea {
-            background: #1a1a1e;
-            color: #00ff00;
-            border: 1px solid #333;
+            background: #000;
+            color: #00ff00; /* Texto tipo Matrix */
+            border: 1px solid #444;
             font-family: 'Consolas', monospace;
-            font-size: 11px;
-            width: 100%;
+            width: 300px;
+            height: 150px;
             margin-bottom: 10px;
+            border-radius: 4px;
+            padding: 5px;
         }
-        .status {
-            font-size: 11px;
-            margin-top: 10px;
-            color: #888;
+
+        .status-box {
+            margin-top: 15px;
+            font-size: 12px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
         }
     </style>
 </head>
 <body>
 
-<canvas id="c1"></canvas>
+    <canvas id="c1"></canvas>
 
-<div id="ui-container">
-    <h1>STRESS GPU v1.0</h1>
-    <div class="brand">By Enric-Xx & CoreDev-HUB</div>
-    
-    <button id="btn">SHOW KERNEL</button>
-    
-    <div id="config">
-        <textarea id="kernel" cols="35" rows="12"></textarea>
-        <br />
-        <button id="apply">APPLY TWEAKS</button>
+    <div id="ui-container">
+        <h1>GPU STRESS TEST</h1>
+        <div class="brand">COREDEV-HUB // ENRIC-XX</div>
+        
+        <button id="btn">Config Kernel</button>
+        
+        <div id="config">
+            <textarea id="kernel"></textarea>
+            <br>
+            <button id="apply">Apply Tweak</button>
+        </div>
+
+        <div class="status-box">
+            <span style="color: #888;">ENGINE:</span> WebGL Raymarching<br>
+            <span style="color: #888;">TARGET:</span> RTX 4060 / i5-12400F
+        </div>
     </div>
 
-    <div class="status">
-        Status: <span style="color: #00ff00;">Running Benchmarking</span><br>
-        Engine: WebGL Raymarching
-    </div>
-</div>
+    <script src="script.js"></script>
 
-<script>
-    console.log("GPU Stress Test Initialized. Author: Enric-Xx & CoreDev-HUB");
-
-    var canvas, gl, shaderProgram;
-    var ang1 = 2.8, ang2 = 0.4, len = 1.6;
-    var cenx = 0, ceny = 0, cenz = 0;
-    var cx, cy;
-
-    // EL KERNEL: Aquí es donde la GPU sufre (Fractal Mandelbulb)
-    var KERNEL_CODE = `float kernel(vec3 ver){
-        vec3 a = ver;
-        float b, c, d;
-        for(int i=0; i<8; i++){ // Aumentado a 8 para más stress
-            b = length(a);
-            c = atan(a.y, a.x) * 8.0;
-            d = acos(a.z / b) * 8.0;
-            b = pow(b, 8.0);
-            a = vec3(b * sin(d) * cos(c), b * sin(d) * sin(c), b * cos(d)) + ver;
-            if(b > 6.0) break;
-        }
-        return 4.0 - dot(a, a);
-    }`;
-
-    var V_SOURCE = `attribute vec4 position;
-        varying vec3 dir;
-        uniform vec3 right, forward, up;
-        uniform float x, y;
-        void main() {
-            gl_Position = position;
-            dir = forward + right * position.x * x + up * position.y * y;
-        }`;
-
-    var F_SOURCE = `precision highp float;
-        float kernel(vec3 ver);
-        uniform vec3 origin, right, up, forward;
-        uniform float len;
-        varying vec3 dir;
-        void main() {
-            vec3 color = vec3(0.0);
-            float step = 0.002 * len;
-            for (int k = 0; k < 400; k++) {
-                vec3 ver = origin + dir * (step * float(k));
-                if (kernel(ver) > 0.0) {
-                    float dist = length(ver - origin);
-                    color = vec3(1.0, 0.2, 0.2) * (1.5 / dist); // Efecto de calor rojo
-                    break;
-                }
-            }
-            gl_FragColor = vec4(color, 1.0);
-        }`;
-
-    function initGL() {
-        canvas = document.getElementById('c1');
-        gl = canvas.getContext('webgl');
-        resize();
-
-        var vert = gl.createShader(gl.VERTEX_SHADER);
-        var frag = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(vert, V_SOURCE);
-        gl.compileShader(vert);
-        
-        gl.shaderSource(frag, F_SOURCE + KERNEL_CODE);
-        gl.compileShader(frag);
-
-        shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vert);
-        gl.attachShader(shaderProgram, frag);
-        gl.linkProgram(shaderProgram);
-        gl.useProgram(shaderProgram);
-
-        // Buffers
-        var buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,0, 1,-1,0, 1,1,0, -1,-1,0, 1,1,0, -1,1,0]), gl.STATIC_DRAW);
-        
-        var pos = gl.getAttribLocation(shaderProgram, 'position');
-        gl.vertexAttribPointer(pos, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(pos);
-    }
-
-    function draw() {
-        ang1 += 0.005; // Rotación automática
-        
-        var eye = [len * Math.cos(ang1) * Math.cos(ang2) + cenx, len * Math.sin(ang2) + ceny, len * Math.sin(ang1) * Math.cos(ang2) + cenz];
-        
-        gl.uniform1f(gl.getUniformLocation(shaderProgram, 'x'), cx/cy);
-        gl.uniform1f(gl.getUniformLocation(shaderProgram, 'y'), 1.0);
-        gl.uniform1f(gl.getUniformLocation(shaderProgram, 'len'), len);
-        gl.uniform3f(gl.getUniformLocation(shaderProgram, 'origin'), eye[0], eye[1], eye[2]);
-        gl.uniform3f(gl.getUniformLocation(shaderProgram, 'right'), Math.sin(ang1), 0, -Math.cos(ang1));
-        gl.uniform3f(gl.getUniformLocation(shaderProgram, 'up'), -Math.sin(ang2)*Math.cos(ang1), Math.cos(ang2), -Math.sin(ang2)*Math.sin(ang1));
-        gl.uniform3f(gl.getUniformLocation(shaderProgram, 'forward'), -Math.cos(ang1)*Math.cos(ang2), -Math.sin(ang2), -Math.sin(ang1)*Math.cos(ang2));
-
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        requestAnimationFrame(draw);
-    }
-
-    function resize() {
-        cx = window.innerWidth;
-        cy = window.innerHeight;
-        canvas.width = cx;
-        canvas.height = cy;
-        if(gl) gl.viewport(0, 0, cx, cy);
-    }
-
-    window.onresize = resize;
-    window.onload = function() {
-        initGL();
-        draw();
-        document.getElementById("kernel").value = KERNEL_CODE;
-    };
-
-    // UI Logic
-    document.getElementById("btn").addEventListener("click", function() {
-        var cfg = document.getElementById("config");
-        cfg.style.display = (cfg.style.display === "block") ? "none" : "block";
-        this.innerText = (cfg.style.display === "block") ? "HIDE KERNEL" : "SHOW KERNEL";
-    });
-
-    document.getElementById("apply").addEventListener("click", function() {
-        KERNEL_CODE = document.getElementById("kernel").value;
-        initGL(); // Reiniciar con nuevos parámetros
-    });
-</script>
 </body>
 </html>
